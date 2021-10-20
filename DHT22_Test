@@ -76,15 +76,13 @@ async def index(request, response):
 @app.route('/images/<fn>')
 async def images(req, resp, fn):
     # Send picture. Filename - in parameter
-    await resp.send_file('images/{}'.format(fn),
-                         content_type='image/jpeg')
+    await resp.send_file('images/{}'.format(fn), content_type='image/jpeg')
     
 # CSS
 @app.route('/css/<fn>')
 async def css(req, resp, fn):
     # Send stylesheet. Filename - in parameter
-    await resp.send_file('css/{}'.format(fn),
-                         content_type='text/css')
+    await resp.send_file('css/{}'.format(fn), content_type='text/css')
 
 _thread.start_new_thread(app.run, ('0.0.0.0', 8081))
 
