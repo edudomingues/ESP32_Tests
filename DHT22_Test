@@ -1,0 +1,94 @@
+import micropython
+from machine import Pin, PWM, I2C
+import time
+import esp32
+import network
+import dht
+import _thread
+import tinyweb
+
+micropython.alloc_emergency_exception_buf(100)
+
+file = open("config.txt", "r")
+wifissid = str(file.readline()[:-2])
+# wifissid = wifissid[:-1]
+print(wifissid)
+senha = str(file.readline()[:-2])
+# senha = senha[:-1]
+print(senha)
+min = float(file.readline())
+print(min)
+max = float(file.readline())
+print(max)
+file.close()
+
+wlan = network.WLAN(network.STA_IF) # create station interface
+wlan.active(True)       # activate the interface
+wlan.connect(wifissid, senha) # connect to an AP
+print('connecting to network...')
+lastTime = time.time()
+while not wlan.isconnected():
+    if (time.time() - lastTime) > 10.0:
+        print('Not connected')
+        break
+print('wifi config:', wlan.ifconfig())
+
+# Create web server application
+app = tinyweb.webserver()
+
+# Index page
+@app.route('/')
+async def index(request, response):
+    d = dht.DHT22(Pin(26))
+    d.measure()
+    tc = round(d.temperature(), 1)
+    um = round(d.humidity(), 1)
+    temperc = str(tc)
+    umidade = str(um)
+    # Start HTTP response with content-type text/html
+    await response.start_html()
+    # Send actual HTML page
+    await response.send('<!DOCTYPE html><html><head><title>Temperatura e Umidade</title>')
+    await response.send('<link href="css/style.css" rel="stylesheet"><meta charset="utf-8"></head>')
+    await response.send('<body><header><h1>Como está o clima agora?</h1></header>')
+    await response.send('<main><div class="intro"><h2>Informação sobre Temperatura e Umidade</h2>')
+    await response.send('<p>Temperatura em graus Celcius e Umidade em %</p></div>')
+    await response.send('<div class="line"><div class="columns">')
+    await response.send('<div class="column">')
+    if tc >= 30:
+        await response.send('<p><img src="images/tquente.jpg" alt="Clima quente"></p>')
+    elif tc >= 20:
+        await response.send('<p><img src="images/tagradavel.jpg" alt="Clima agradavel"></p>')
+    else:
+        await response.send('<p><img src="images/tfrio.jpg" alt="Clima frio"></p>')
+    await response.send('</div><div class="column"><h3>Temperatura:</h3><h1> {} C</h1>'.format(temperc))
+    await response.send('</div><div class="column"><h1>           </h1></div><div class="column">')
+    if um < 30:
+        await response.send('<p><img src="images/tseco.jpg" alt="Tempo seco"></p>')
+    elif um < 80:
+        await response.send('<p><img src="images/tumido.jpg" alt="Tempo umido"></p>')
+    else:
+        await response.send('<p><img src="images/tchuva.jpg" alt="Tempo chuvoso"></p>')
+    await response.send('</div><div class="column"><h3>Umidade:</h3><h1> {} %</h1>'.format(umidade))
+    await response.send('</div></div></div></main></body></html>')
+
+# Images
+@app.route('/images/<fn>')
+async def images(req, resp, fn):
+    # Send picture. Filename - in parameter
+    await resp.send_file('images/{}'.format(fn),
+                         content_type='image/jpeg')
+    
+# CSS
+@app.route('/css/<fn>')
+async def images(req, resp, fn):
+    # Send picture. Filename - in parameter
+    await resp.send_file('css/{}'.format(fn),
+                         content_type='text/css')
+    
+host='0.0.0.0'
+port=8081
+_thread.start_new_thread(app.run, (host, port))
+
+while True:
+  continue
