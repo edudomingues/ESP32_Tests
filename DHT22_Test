@@ -11,15 +11,7 @@ micropython.alloc_emergency_exception_buf(100)
 
 file = open("config.txt", "r")
 wifissid = str(file.readline()[:-2])
-# wifissid = wifissid[:-1]
-print(wifissid)
 senha = str(file.readline()[:-2])
-# senha = senha[:-1]
-print(senha)
-min = float(file.readline())
-print(min)
-max = float(file.readline())
-print(max)
 file.close()
 
 wlan = network.WLAN(network.STA_IF) # create station interface
